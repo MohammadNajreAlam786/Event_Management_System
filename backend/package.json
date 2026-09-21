@@ -1,0 +1,32 @@
+{
+  "name": "event-management-backend",
+  "version": "0.14.0",
+  "private": true,
+  "description": "API layer for the AI-Powered Event Planning & Management System (Phase 14: team event registration, attendance CSV export, participant dashboard data, Home page navigation).",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed:admin": "node src/utils/seedAdmin.js",
+    "seed:dev": "node src/utils/seedDevAccounts.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0",
+    "pdfkit": "^0.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

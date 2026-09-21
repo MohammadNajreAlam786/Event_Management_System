@@ -1,0 +1,13 @@
+# AI service dependencies.
+#
+# Phase 5 (AI Planning Assistant) adds a rule-based analysis engine that runs on
+# the standard library + pydantic only — no ML framework, no model download.
+#
+# Phase 9 (feedback sentiment analysis) adds VADER — a small, offline,
+# lexicon-and-rule sentiment model (~125 KB wheel, pure Python; pulls `requests`
+# transitively). No transformer, no torch, no model download.
+
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+pydantic>=2.7,<3.0
+vaderSentiment>=3.3,<4.0
