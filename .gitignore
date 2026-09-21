@@ -57,7 +57,6 @@ pnpm-debug.log*
 Thumbs.db
 
 # ---------------------------------------------------------------------------
-# Keep the academic abstract tracked — do NOT ignore it
+# Keep academic/project documents local only
 # ---------------------------------------------------------------------------
-!project-documents/
-!project-documents/**
+project-documents/
