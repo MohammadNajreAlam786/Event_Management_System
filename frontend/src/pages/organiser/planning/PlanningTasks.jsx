@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useOutletContext } from 'react-router-dom';
 
 import planningService from '../../../services/planningService.js';
 import CrudSection from '../../../components/planning/CrudSection.jsx';
@@ -27,6 +28,14 @@ const InlineStatus = ({ eventId, task, onChanged }) => (
 
 const PlanningTasks = () => {
   const { id } = useParams();
+  const { event } = useOutletContext();
+  const [teamMembers, setTeamMembers] = useState([]);
+
+  useEffect(() => {
+    planningService.getTeam(id).then((data) => setTeamMembers(data.team ?? [])).catch(() => setTeamMembers([]));
+  }, [id]);
+
+  const TaskFormWithTeam = (props) => <TaskForm {...props} teamMembers={teamMembers} />;
   return (
     <CrudSection
       title="Tasks"
@@ -49,7 +58,8 @@ const PlanningTasks = () => {
       createItem={(body) => planningService.createTask(id, body)}
       updateItem={(taskId, body) => planningService.updateTask(id, taskId, body)}
       deleteItem={(taskId) => planningService.deleteTask(id, taskId)}
-      FormComponent={TaskForm}
+      FormComponent={TaskFormWithTeam}
+      readOnly={event?.status === 'COMPLETED'}
       renderRowActions={(task, refresh) => <InlineStatus eventId={id} task={task} onChanged={refresh} />}
       columns={[
         { key: 'title', header: 'Title', className: 'font-medium text-slate-800', render: (t) => t.title },

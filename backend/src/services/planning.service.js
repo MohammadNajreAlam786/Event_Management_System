@@ -5,6 +5,7 @@ import EventSchedule from '../models/eventSchedule.model.js';
 import EventResource from '../models/eventResource.model.js';
 import EventBudgetItem from '../models/eventBudgetItem.model.js';
 import EventTeamMember from '../models/eventTeamMember.model.js';
+import Event from '../models/event.model.js';
 import { ApiError } from '../utils/apiError.js';
 import {
   validateTask,
@@ -20,6 +21,7 @@ import {
   BUDGET_CATEGORIES,
   TEAM_STATUSES,
 } from '../utils/planningValidators.js';
+import { createTaskInvitation, resolveTeamAssignment, getTeamWorkflowSummaries } from './teamAccess.service.js';
 
 /**
  * Planning domain logic — CRUD for the five planning sub-resources plus the
@@ -44,6 +46,14 @@ const clampLimit = (v, dflt = 20) => {
 };
 const assertItemId = (id) => {
   if (!mongoose.isValidObjectId(id)) throw ApiError.badRequest('Invalid item id.');
+};
+const assertPlanningMutable = async (eventId) => {
+  const event = await Event.findOne({ _id: eventId, isDeleted: { $ne: true } });
+  if (!event) throw ApiError.notFound('Event not found.');
+  if (event.status === 'COMPLETED') {
+    throw ApiError.conflict('Completed events are locked and their planning configuration cannot be changed.');
+  }
+  return event;
 };
 const throwValidation = (errors) =>
   Object.assign(ApiError.badRequest('Please correct the highlighted fields.'), { errors });
@@ -99,7 +109,7 @@ const makeCrud = ({ Model, validate, editable, coerce = (x) => x }) => {
 const taskCrud = makeCrud({
   Model: EventTask,
   validate: validateTask,
-  editable: ['title', 'description', 'assignedTo', 'priority', 'status', 'dueDate'],
+  editable: ['title', 'description', 'assignedTo', 'teamMember', 'priority', 'status', 'dueDate'],
   coerce: (d) => {
     if (d.priority) d.priority = String(d.priority).toUpperCase();
     if (d.status) d.status = String(d.status).toUpperCase();
@@ -110,9 +120,35 @@ const taskCrud = makeCrud({
 
 const isOverdue = (t) => t.dueDate && t.status !== 'COMPLETED' && new Date(t.dueDate) < new Date();
 
-export const createTask = (eventId, body) => taskCrud.create(eventId, body);
-export const updateTask = (eventId, id, body) => taskCrud.update(eventId, id, body);
-export const deleteTask = (eventId, id) => taskCrud.remove(eventId, id);
+export const createTask = async (eventId, body, organiserId) => {
+  const event = await assertPlanningMutable(eventId);
+  let payload = { ...(body ?? {}) };
+  let assignment = null;
+  if (payload.teamMember) {
+    assignment = await resolveTeamAssignment({ eventId, teamMemberId: payload.teamMember });
+    payload = { ...payload, teamMember: assignment.member._id, assignedTo: assignment.member.name, status: 'ASSIGNED' };
+  }
+  const task = await taskCrud.create(eventId, payload);
+  if (assignment) await createTaskInvitation({ event, task, member: assignment.member, recipient: assignment.recipient, organiserId });
+  return task;
+};
+export const updateTask = async (eventId, id, body) => {
+  await assertPlanningMutable(eventId);
+  if (body?.teamMember) {
+    const current = await taskCrud.get(eventId, id);
+    if (current.teamMember && String(current.teamMember) !== String(body.teamMember)) {
+      throw ApiError.badRequest('Reassigning an invited task is not supported; create a new task assignment to preserve invitation history.');
+    }
+    if (!current.teamMember) {
+      throw ApiError.badRequest('Assign a team member when creating a task so the required invitation can be created.');
+    }
+  }
+  return taskCrud.update(eventId, id, body);
+};
+export const deleteTask = async (eventId, id) => {
+  await assertPlanningMutable(eventId);
+  return taskCrud.remove(eventId, id);
+};
 
 const PRIORITY_RANK = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 
@@ -192,9 +228,9 @@ const withConflicts = (items) => {
   return flagged;
 };
 
-export const createSchedule = (eventId, body) => scheduleCrud.create(eventId, body);
-export const updateSchedule = (eventId, id, body) => scheduleCrud.update(eventId, id, body);
-export const deleteSchedule = (eventId, id) => scheduleCrud.remove(eventId, id);
+export const createSchedule = async (eventId, body) => { await assertPlanningMutable(eventId); return scheduleCrud.create(eventId, body); };
+export const updateSchedule = async (eventId, id, body) => { await assertPlanningMutable(eventId); return scheduleCrud.update(eventId, id, body); };
+export const deleteSchedule = async (eventId, id) => { await assertPlanningMutable(eventId); return scheduleCrud.remove(eventId, id); };
 
 export const listSchedule = async (eventId) => {
   const docs = await EventSchedule.find({ event: eventId }).sort({ startTime: 1, createdAt: 1 });
@@ -219,9 +255,9 @@ const resourceCrud = makeCrud({
   },
 });
 
-export const createResource = (eventId, body) => resourceCrud.create(eventId, body);
-export const updateResource = (eventId, id, body) => resourceCrud.update(eventId, id, body);
-export const deleteResource = (eventId, id) => resourceCrud.remove(eventId, id);
+export const createResource = async (eventId, body) => { await assertPlanningMutable(eventId); return resourceCrud.create(eventId, body); };
+export const updateResource = async (eventId, id, body) => { await assertPlanningMutable(eventId); return resourceCrud.update(eventId, id, body); };
+export const deleteResource = async (eventId, id) => { await assertPlanningMutable(eventId); return resourceCrud.remove(eventId, id); };
 
 export const listResources = async (eventId, query = {}) => {
   const filter = { event: eventId };
@@ -253,9 +289,9 @@ const budgetCrud = makeCrud({
   },
 });
 
-export const createBudgetItem = (eventId, body) => budgetCrud.create(eventId, body);
-export const updateBudgetItem = (eventId, id, body) => budgetCrud.update(eventId, id, body);
-export const deleteBudgetItem = (eventId, id) => budgetCrud.remove(eventId, id);
+export const createBudgetItem = async (eventId, body) => { await assertPlanningMutable(eventId); return budgetCrud.create(eventId, body); };
+export const updateBudgetItem = async (eventId, id, body) => { await assertPlanningMutable(eventId); return budgetCrud.update(eventId, id, body); };
+export const deleteBudgetItem = async (eventId, id) => { await assertPlanningMutable(eventId); return budgetCrud.remove(eventId, id); };
 
 export const listBudget = async (eventId, query = {}) => {
   const filter = { event: eventId };
@@ -285,16 +321,20 @@ const teamCrud = makeCrud({
   },
 });
 
-export const createTeamMember = (eventId, body) => teamCrud.create(eventId, body);
-export const updateTeamMember = (eventId, id, body) => teamCrud.update(eventId, id, body);
-export const deleteTeamMember = (eventId, id) => teamCrud.remove(eventId, id);
+export const createTeamMember = async (eventId, body) => { await assertPlanningMutable(eventId); return teamCrud.create(eventId, body); };
+export const updateTeamMember = async (eventId, id, body) => { await assertPlanningMutable(eventId); return teamCrud.update(eventId, id, body); };
+export const deleteTeamMember = async (eventId, id) => { await assertPlanningMutable(eventId); return teamCrud.remove(eventId, id); };
 
 export const listTeam = async (eventId, query = {}) => {
   const filter = { event: eventId };
   const status = up(query.status);
   if (status && TEAM_STATUSES.includes(status)) filter.status = status;
-  const docs = await EventTeamMember.find(filter).sort({ createdAt: -1 });
-  return { team: docs.map((d) => d.toJSON()) };
+  const [event, docs] = await Promise.all([
+    Event.findById(eventId).select('status'),
+    EventTeamMember.find(filter).sort({ createdAt: -1 }),
+  ]);
+  const summaries = event ? await getTeamWorkflowSummaries({ event, members: docs }) : new Map();
+  return { team: docs.map((d) => ({ ...d.toJSON(), ...(summaries.get(String(d._id)) ?? {}) })) };
 };
 
 /* ------------------------------------------------------------------ Derived views */

@@ -4,8 +4,8 @@
  */
 const humanise = (v) => v.charAt(0) + v.slice(1).toLowerCase().replace(/_/g, ' ');
 
-export const TASK_STATUSES = ['TODO', 'IN_PROGRESS', 'COMPLETED'];
-export const TASK_STATUS_LABEL = { TODO: 'To do', IN_PROGRESS: 'In progress', COMPLETED: 'Completed' };
+export const TASK_STATUSES = ['TODO', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'];
+export const TASK_STATUS_LABEL = { TODO: 'To do', ASSIGNED: 'Assigned', IN_PROGRESS: 'In progress', COMPLETED: 'Completed' };
 export const TASK_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 export const SCHEDULE_TYPES = ['SESSION', 'REGISTRATION', 'CEREMONY', 'BREAK', 'MEAL', 'WORKSHOP', 'OTHER'];
@@ -36,7 +36,7 @@ export const BADGE_TONES = {
 
 export const TONE_BY_VALUE = {
   // task status
-  TODO: 'slate', IN_PROGRESS: 'sky', COMPLETED: 'emerald',
+  TODO: 'slate', ASSIGNED: 'indigo', IN_PROGRESS: 'sky', COMPLETED: 'emerald',
   // priority
   LOW: 'slate', MEDIUM: 'indigo', HIGH: 'amber', CRITICAL: 'rose',
   // resource status

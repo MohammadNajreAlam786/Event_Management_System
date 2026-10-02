@@ -9,6 +9,7 @@ import registrationRoutes from './registration.routes.js';
 import certificateRoutes from './certificate.routes.js';
 import notificationRoutes from './notification.routes.js';
 import roleTestRoutes from './roleTest.routes.js';
+import teamAccessRoutes from './teamAccess.routes.js';
 
 /**
  * Root API router. All feature routers are mounted here under /api
@@ -32,6 +33,7 @@ router.use('/events/:eventId', planningRoutes);
 
 // Participant registration (Phase 6): /api/registrations/{mine, :id/cancel, :id/qr}
 router.use('/registrations', registrationRoutes);
+router.use('/team-work', teamAccessRoutes);
 
 // Certificates (Phase 8): /api/certificates/{verify/:code (public), mine, :id/download}
 router.use('/certificates', certificateRoutes);

@@ -22,6 +22,8 @@ import { syncEventStatuses } from './eventStatusTransition.service.js';
 const CANCELLED = EVENT_STATUSES.CANCELLED;
 const COMPLETED = EVENT_STATUSES.COMPLETED;
 
+const completedLock = () => ApiError.conflict('Completed events are locked and historical event data cannot be changed.');
+
 /** Format a Date for the EVENT_UPDATED notification summary. */
 const shortDate = (v) => {
   if (!v) return '';
@@ -175,7 +177,12 @@ export const loadOwnedEvent = async (eventId, organiserId) => {
  * endpoint. All fields are revalidated against the merged result.
  */
 export const updateEvent = async ({ eventId, organiserId, body }) => {
+  await syncEventStatuses();
   const event = await loadOwnedEvent(eventId, organiserId);
+  if (event.status === COMPLETED) throw completedLock();
+  if (body?.status !== undefined) {
+    throw ApiError.badRequest('Event lifecycle status is controlled by the server and cannot be changed through event updates.');
+  }
   const updates = pickEditableEventFields(body);
 
   const merged = {
@@ -242,9 +249,44 @@ export const updateEventStatusByOwner = async ({ eventId, organiserId, status })
   if (!isValidEventStatus(status)) {
     throw ApiError.badRequest(`"${status}" is not a valid event status.`);
   }
+  await syncEventStatuses();
   const event = await loadOwnedEvent(eventId, organiserId);
   const previousStatus = event.status;
-  event.status = String(status).toUpperCase();
+  const requested = String(status).toUpperCase();
+  if (previousStatus === COMPLETED) throw completedLock();
+  if (previousStatus === CANCELLED) {
+    throw ApiError.badRequest('Cancelled events cannot be reopened or moved to another lifecycle status.');
+  }
+
+  // Organisers can prepare/publish an event or cancel an active one. Once it
+  // is published, time controls UPCOMING -> ONGOING -> COMPLETED; it is never
+  // a free-form status field.
+  const now = new Date();
+  const automatic = event.endDate < now
+    ? COMPLETED
+    : event.startDate <= now
+      ? EVENT_STATUSES.ONGOING
+      : EVENT_STATUSES.UPCOMING;
+
+  if (requested === CANCELLED) {
+    if (![EVENT_STATUSES.DRAFT, EVENT_STATUSES.PLANNED, EVENT_STATUSES.UPCOMING, EVENT_STATUSES.ONGOING].includes(previousStatus)) {
+      throw ApiError.badRequest('This event cannot be cancelled from its current status.');
+    }
+  } else if (requested === EVENT_STATUSES.PLANNED && previousStatus === EVENT_STATUSES.DRAFT) {
+    // Explicit preparation state before a date-controlled event is published.
+  } else if (
+    requested === EVENT_STATUSES.UPCOMING &&
+    [EVENT_STATUSES.DRAFT, EVENT_STATUSES.PLANNED].includes(previousStatus) &&
+    automatic === EVENT_STATUSES.UPCOMING
+  ) {
+    // A controlled publish action; later lifecycle transitions are automatic.
+  } else {
+    throw ApiError.badRequest(
+      `Invalid lifecycle transition from ${previousStatus} to ${requested}. Published event status is controlled by the event schedule.`,
+    );
+  }
+
+  event.status = requested;
   await event.save();
   await event.populate('organiser', ORGANISER_FIELDS);
 
@@ -260,7 +302,9 @@ export const updateEventStatusByOwner = async ({ eventId, organiserId, status })
 
 /** Soft-delete an owned event. */
 export const deleteEvent = async ({ eventId, organiserId }) => {
+  await syncEventStatuses();
   const event = await loadOwnedEvent(eventId, organiserId);
+  if (event.status === COMPLETED) throw completedLock();
   event.isDeleted = true;
   event.deletedAt = new Date();
   await event.save();
@@ -335,9 +379,11 @@ export const updateEventStatusByAdmin = async ({ eventId, status }) => {
   if (!isValidEventStatus(status)) {
     throw ApiError.badRequest(`"${status}" is not a valid event status.`);
   }
+  await syncEventStatuses();
   assertObjectId(eventId);
   const event = await Event.findOne({ _id: eventId, ...NOT_DELETED });
   if (!event) throw ApiError.notFound('Event not found.');
+  if (event.status === COMPLETED) throw completedLock();
   const previousStatus = event.status;
   event.status = String(status).toUpperCase();
   await event.save();

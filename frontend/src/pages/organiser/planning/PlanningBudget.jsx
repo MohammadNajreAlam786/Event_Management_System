@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
 
 import planningService from '../../../services/planningService.js';
 import CrudSection from '../../../components/planning/CrudSection.jsx';
@@ -22,6 +22,7 @@ const Totals = ({ totals }) => (
 
 const PlanningBudget = () => {
   const { id } = useParams();
+  const { event } = useOutletContext();
   return (
     <CrudSection
       title="Budget"
@@ -44,6 +45,7 @@ const PlanningBudget = () => {
       updateItem={(bid, body) => planningService.updateBudgetItem(id, bid, body)}
       deleteItem={(bid) => planningService.deleteBudgetItem(id, bid)}
       FormComponent={BudgetForm}
+      readOnly={event?.status === 'COMPLETED'}
       columns={[
         { key: 'category', header: 'Category', className: 'font-medium text-slate-800', render: (b) => label(b.category) },
         { key: 'desc', header: 'Description', render: (b) => b.description || <span className="text-slate-400">—</span> },

@@ -40,6 +40,10 @@ export const planningService = {
   createTeamMember: (eventId, body) => api.post(`${base(eventId)}/team`, body).then((r) => r.data.data.member),
   updateTeamMember: (eventId, id, body) => api.patch(`${base(eventId)}/team/${id}`, body).then((r) => r.data.data.member),
   deleteTeamMember: (eventId, id) => api.delete(`${base(eventId)}/team/${id}`).then((r) => r.data),
+
+  getAccessRequests: (eventId) => api.get(`${base(eventId)}/access-requests`).then((r) => r.data.data),
+  decideAccessRequest: (eventId, requestId, decision) =>
+    api.post(`${base(eventId)}/access-requests/${requestId}/decision`, { decision }).then((r) => r.data.data.request),
 };
 
 export default planningService;

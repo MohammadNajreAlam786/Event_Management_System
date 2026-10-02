@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
 
 import planningService from '../../../services/planningService.js';
 import CrudSection from '../../../components/planning/CrudSection.jsx';
@@ -12,6 +12,7 @@ const timeOnly = (iso) =>
 
 const PlanningSchedule = () => {
   const { id } = useParams();
+  const { event } = useOutletContext();
   return (
     <CrudSection
       title="Schedule"
@@ -38,6 +39,7 @@ const PlanningSchedule = () => {
       updateItem={(sid, body) => planningService.updateSchedule(id, sid, body)}
       deleteItem={(sid) => planningService.deleteSchedule(id, sid)}
       FormComponent={ScheduleForm}
+      readOnly={event?.status === 'COMPLETED'}
       columns={[
         {
           key: 'time',

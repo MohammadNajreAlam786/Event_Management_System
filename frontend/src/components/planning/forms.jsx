@@ -19,7 +19,7 @@ const nonNeg = (v, msg) => (v !== '' && Number(v) < 0 ? msg : undefined);
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /* --------------------------------------------------------------- Task */
-export const TaskForm = (props) => (
+export const TaskForm = ({ teamMembers = [], ...props }) => (
   <PlanningForm
     {...props}
     fields={[
@@ -27,6 +27,14 @@ export const TaskForm = (props) => (
       { name: 'description', label: 'Description', type: 'textarea', colSpan: 2 },
       { name: 'priority', label: 'Priority', type: 'select', options: opts(TASK_PRIORITIES) },
       { name: 'status', label: 'Status', type: 'select', options: opts(TASK_STATUSES, (v) => TASK_STATUS_LABEL[v]) },
+      {
+        name: 'teamMember',
+        label: 'Invite team member',
+        type: 'select',
+        options: [{ value: '', label: 'No invitation / free-text assignment' }, ...teamMembers.map((m) => ({ value: m.id, label: `${m.name}${m.email ? ` (${m.email})` : ''}` }))],
+        help: 'Requires a team contact whose email belongs to an active participant account.',
+        colSpan: 2,
+      },
       { name: 'assignedTo', label: 'Assigned to', type: 'text', help: 'A name or label (optional)' },
       { name: 'dueDate', label: 'Due date', type: 'datetime-local' },
     ]}
@@ -35,6 +43,7 @@ export const TaskForm = (props) => (
       description: t?.description ?? '',
       priority: t?.priority ?? 'MEDIUM',
       status: t?.status ?? 'TODO',
+      teamMember: t?.teamMember ?? '',
       assignedTo: t?.assignedTo ?? '',
       dueDate: toDatetimeLocalValue(t?.dueDate),
     })}
@@ -49,6 +58,7 @@ export const TaskForm = (props) => (
       description: v.description.trim(),
       priority: v.priority,
       status: v.status,
+      teamMember: v.teamMember || undefined,
       assignedTo: v.assignedTo.trim(),
       dueDate: v.dueDate ? fromDatetimeLocalValue(v.dueDate) : null,
     })}

@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
  * name/label for now (no User reference — team members are a separate,
  * non-account model in this phase).
  */
-export const TASK_STATUSES = Object.freeze(['TODO', 'IN_PROGRESS', 'COMPLETED']);
+export const TASK_STATUSES = Object.freeze(['TODO', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED']);
 export const TASK_PRIORITIES = Object.freeze(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 
 const eventTaskSchema = new mongoose.Schema(
@@ -26,6 +26,9 @@ const eventTaskSchema = new mongoose.Schema(
     },
     description: { type: String, trim: true, maxlength: [2000, 'Description is too long.'], default: '' },
     assignedTo: { type: String, trim: true, maxlength: [150, 'Assignee is too long.'], default: '' },
+    // Optional link used by the controlled team-invitation workflow. Free-text
+    // assignments above remain supported for existing planning records.
+    teamMember: { type: mongoose.Schema.Types.ObjectId, ref: 'EventTeamMember', default: null, index: true },
     priority: {
       type: String,
       enum: { values: TASK_PRIORITIES, message: '{VALUE} is not a valid priority.' },

@@ -27,6 +27,7 @@ import OrganiserEventDetails from '../pages/organiser/OrganiserEventDetails.jsx'
 import OrganiserEventParticipants from '../pages/organiser/OrganiserEventParticipants.jsx';
 import OrganiserEventAttendance from '../pages/organiser/OrganiserEventAttendance.jsx';
 import UserDashboard from '../pages/user/UserDashboard.jsx';
+import TeamWork from '../pages/user/TeamWork.jsx';
 import BrowseEvents from '../pages/user/BrowseEvents.jsx';
 import EventDetailsPublic from '../pages/user/EventDetailsPublic.jsx';
 import MyEvents from '../pages/user/MyEvents.jsx';
@@ -84,6 +85,7 @@ const AppRoutes = () => (
       <Route path="events" element={<BrowseEvents />} />
       <Route path="events/:id" element={<EventDetailsPublic />} />
       <Route path="my-events" element={<MyEvents />} />
+      <Route path="team-work" element={<TeamWork />} />
       <Route path="my-events/:registrationId/qr" element={<EventQr />} />
       <Route path="notifications" element={<UserNotifications />} />
       <Route path="certificates" element={<UserCertificates />} />

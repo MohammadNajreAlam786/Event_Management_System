@@ -1,5 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { loadOwnedEvent } from '../services/event.service.js';
+import { syncEventStatuses } from '../services/eventStatusTransition.service.js';
+import { ApiError } from '../utils/apiError.js';
 
 /**
  * Guard for every planning route under /api/events/:eventId/... .
@@ -11,7 +13,16 @@ import { loadOwnedEvent } from '../services/event.service.js';
  * don't reload it.
  */
 export const requireEventOwnership = asyncHandler(async (req, _res, next) => {
+  await syncEventStatuses();
   const event = await loadOwnedEvent(req.params.eventId, req.user.id);
   req.event = event;
   return next();
 });
+
+/** Completed events remain viewable, but their planning configuration is immutable. */
+export const requireMutableEventPlanning = (req, _res, next) => {
+  if (req.event?.status === 'COMPLETED') {
+    return next(ApiError.conflict('Completed events are locked and their planning configuration cannot be changed.'));
+  }
+  return next();
+};

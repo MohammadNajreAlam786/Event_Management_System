@@ -182,20 +182,24 @@ const OrganiserEvents = () => {
                           Analytics
                         </Link>
                       )}
-                      <Link
-                        to={`/organiser/events/${ev.id}/edit`}
-                        className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        type="button"
-                        disabled={busyId === ev.id}
-                        onClick={() => setConfirmDelete(ev)}
-                        className="rounded-md border border-rose-300 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                      >
-                        Delete
-                      </button>
+                      {ev.status !== 'COMPLETED' && (
+                        <>
+                          <Link
+                            to={`/organiser/events/${ev.id}/edit`}
+                            className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            disabled={busyId === ev.id}
+                            onClick={() => setConfirmDelete(ev)}
+                            className="rounded-md border border-rose-300 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -141,6 +141,46 @@ export const notifyFeedbackAvailable = async ({ eventId, eventTitle }) => {
   }
 };
 
+// Phase 15 — team-workflow notifications. These intentionally use the same
+// durable notification centre as registrations and certificates.
+export const notifyTaskInvitation = ({ userId, eventId, eventTitle, taskTitle }) =>
+  createNotification({
+    recipient: userId,
+    event: eventId,
+    type: 'TEAM_TASK_INVITATION',
+    title: 'Task invitation',
+    message: `You have been invited to work on "${taskTitle}" for "${eventTitle}".`,
+  });
+
+export const notifyInvitationResponse = ({ organiserId, eventId, eventTitle, memberName, accepted }) =>
+  createNotification({
+    recipient: organiserId,
+    event: eventId,
+    type: accepted ? 'TEAM_INVITATION_ACCEPTED' : 'TEAM_INVITATION_DECLINED',
+    title: accepted ? 'Task invitation accepted' : 'Task invitation declined',
+    message: `${memberName} has ${accepted ? 'accepted' : 'declined'} a task invitation for "${eventTitle}".`,
+  });
+
+export const notifyAccessRequest = ({ organiserId, eventId, eventTitle, memberName }) =>
+  createNotification({
+    recipient: organiserId,
+    event: eventId,
+    type: 'TEAM_ACCESS_REQUESTED',
+    title: 'Post-event access requested',
+    message: `${memberName} requested limited task access for completed event "${eventTitle}".`,
+  });
+
+export const notifyAccessRequestDecision = ({ userId, eventId, eventTitle, approved }) =>
+  createNotification({
+    recipient: userId,
+    event: eventId,
+    type: approved ? 'TEAM_ACCESS_REQUEST_APPROVED' : 'TEAM_ACCESS_REQUEST_REJECTED',
+    title: approved ? 'Post-event access approved' : 'Post-event access rejected',
+    message: approved
+      ? `Your limited task access request for "${eventTitle}" was approved.`
+      : `Your limited task access request for "${eventTitle}" was rejected.`,
+  });
+
 /* ---------------- reads / mutations (authenticated USER, own only) ---------------- */
 
 export const listForUser = async ({ userId, unreadOnly, page, limit }) => {

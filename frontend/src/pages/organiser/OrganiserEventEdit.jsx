@@ -23,6 +23,10 @@ const OrganiserEventEdit = () => {
       .getEvent(id)
       .then((data) => {
         if (!active) return;
+        if (data.status === 'COMPLETED') {
+          navigate(`/organiser/events/${id}`, { replace: true });
+          return;
+        }
         setEvent(data);
         setLoadState('ready');
       })

@@ -13,10 +13,10 @@ export const listTasks = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await planning.listTasks(eventId(req), req.query) });
 });
 export const createTask = asyncHandler(async (req, res) => {
-  res.status(201).json({ success: true, data: { task: await planning.createTask(eventId(req), req.body) }, message: 'Task created.' });
+  res.status(201).json({ success: true, data: { task: await planning.createTask(eventId(req), req.body, req.user.id) }, message: 'Task created.' });
 });
 export const updateTask = asyncHandler(async (req, res) => {
-  res.json({ success: true, data: { task: await planning.updateTask(eventId(req), req.params.taskId, req.body) }, message: 'Task updated.' });
+  res.json({ success: true, data: { task: await planning.updateTask(eventId(req), req.params.taskId, req.body, req.user.id) }, message: 'Task updated.' });
 });
 export const deleteTask = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await planning.deleteTask(eventId(req), req.params.taskId), message: 'Task deleted.' });

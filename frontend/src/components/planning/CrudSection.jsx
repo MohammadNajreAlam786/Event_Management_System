@@ -43,6 +43,7 @@ const CrudSection = ({
   getId = (i) => i.id,
   onChanged,
   minTableWidth = 640,
+  readOnly = false,
 }) => {
   const navigate = useNavigate();
 
@@ -141,7 +142,7 @@ const CrudSection = ({
       <PageHeader
         title={title}
         description={description}
-        actions={
+        actions={!readOnly && (
           <button
             type="button"
             onClick={() => {
@@ -154,8 +155,14 @@ const CrudSection = ({
             <Icon name="plus" className="h-4 w-4" />
             {addLabel}
           </button>
-        }
+        )}
       />
+
+      {readOnly && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          This completed event is locked. Planning information remains available as historical data.
+        </div>
+      )}
 
       {renderSummary && loadState === 'ready' && renderSummary(data)}
 
@@ -225,8 +232,8 @@ const CrudSection = ({
                   ))}
                   <td className="px-4 py-3 align-top">
                     <div className="flex justify-end gap-2">
-                      {renderRowActions && renderRowActions(item, refresh)}
-                      <button
+                      {!readOnly && renderRowActions && renderRowActions(item, refresh)}
+                      {!readOnly && <button
                         type="button"
                         onClick={() => {
                           setForm({ mode: 'edit', item });
@@ -236,14 +243,14 @@ const CrudSection = ({
                         className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
                       >
                         Edit
-                      </button>
-                      <button
+                      </button>}
+                      {!readOnly && <button
                         type="button"
                         onClick={() => setConfirm(item)}
                         className="rounded-md border border-rose-300 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
                       >
                         Delete
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>

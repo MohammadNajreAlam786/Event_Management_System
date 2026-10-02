@@ -1,8 +1,6 @@
 import { Router } from 'express';
 
 import { authenticate } from '../middleware/authMiddleware.js';
-import { requireRole } from '../middleware/roleMiddleware.js';
-import { ROLES } from '../models/user.model.js';
 import * as notificationController from '../controllers/notification.controller.js';
 
 /**
@@ -13,7 +11,7 @@ import * as notificationController from '../controllers/notification.controller.
  */
 const router = Router();
 
-router.use(authenticate, requireRole(ROLES.USER));
+router.use(authenticate);
 
 router.get('/', notificationController.list);
 router.get('/unread-count', notificationController.unreadCount);

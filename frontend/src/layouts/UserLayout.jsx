@@ -11,6 +11,7 @@ const titleFor = (pathname) => {
   if (matchPath('/user/events', pathname)) return 'Browse Events';
   if (matchPath('/user/my-events/:registrationId/qr', pathname)) return 'Attendance QR';
   if (matchPath('/user/my-events', pathname)) return 'My Events';
+  if (matchPath('/user/team-work', pathname)) return 'Team Work';
   if (matchPath('/user/notifications', pathname)) return 'Notifications';
   if (matchPath('/user/certificates', pathname)) return 'Certificates';
   if (matchPath('/user/feedback/:eventId', pathname)) return 'Give Feedback';
@@ -49,6 +50,7 @@ const UserLayout = () => {
     { to: '/user', label: 'Dashboard', end: true, icon: 'dashboard' },
     { to: '/user/events', label: 'Discover Events', end: true, icon: 'search' },
     { to: '/user/my-events', label: 'My Events', end: true, icon: 'calendar-check' },
+    { to: '/user/team-work', label: 'Team Work', end: true, icon: 'clipboard-check' },
     { to: '/user/notifications', label: 'Notifications', end: true, icon: 'bell', badge: unread },
     { to: '/user/certificates', label: 'Certificates', end: true, icon: 'award' },
     { to: '/user/feedback', label: 'Feedback', end: true, icon: 'message-square' },
