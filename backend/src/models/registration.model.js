@@ -10,11 +10,11 @@ import mongoose from 'mongoose';
  * user never ends up with two active registrations for one event and the
  * registration `_id` stays stable for attendance to reference.
  *
- * Phase 7 adds `qrNonce` — an opaque per-registration value baked into the
- * participant's signed QR credential. It is (re)issued whenever the
- * registration becomes active and rotated on cancellation, so a cancelled
- * registration's old QR image stops verifying. It is `select: false` — never
- * returned by an API — and is NOT the QR itself (see utils/qrToken.js).
+ * Phase 7 adds `attendanceCredential` — a cryptographically random, short
+ * credential issued for each active registration. It is `select: false` so it
+ * is only returned to the authenticated registration owner by the QR endpoint.
+ * `qrNonce` remains solely for backward-compatible validation of previously
+ * issued signed QR tokens during the credential migration.
  *
  * Phase 14 adds `team` — set only for a member of a TEAM-registered event
  * (see team.model.js). Deliberately NOT a redesign: a team member's row is a
@@ -47,6 +47,15 @@ const registrationSchema = new mongoose.Schema(
     cancelledAt: { type: Date, default: null },
     // Phase 7 — QR attendance credential nonce. Opaque; never exposed.
     qrNonce: { type: String, default: null, select: false },
+    // Phase 15 — short, case-sensitive attendance credential. The database
+    // index below guarantees that no two registrations can share a code.
+    attendanceCredential: {
+      type: String,
+      default: null,
+      select: false,
+      trim: true,
+      match: [/^[A-Za-z0-9]{10}$/, 'Attendance credential must be 10 alphanumeric characters.'],
+    },
     // Phase 14 — set for a team-registration member; null for an individual registration.
     team: {
       type: mongoose.Schema.Types.ObjectId,
@@ -71,6 +80,7 @@ const registrationSchema = new mongoose.Schema(
 // One registration row per (user, event). Prevents duplicate registrations at
 // the database level, not just in the UI.
 registrationSchema.index({ user: 1, event: 1 }, { unique: true });
+registrationSchema.index({ attendanceCredential: 1 }, { unique: true, sparse: true });
 // Organiser participant lists + the capacity count.
 registrationSchema.index({ event: 1, status: 1 });
 

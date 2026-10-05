@@ -116,7 +116,7 @@ const QrScanner = ({ onDetected, busy = false }) => {
             className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
           >
             <Icon name="qr-code" className="h-4 w-4" />
-            Start camera
+            Open Camera Scanner
           </button>
           <p className="mt-2 text-xs text-slate-500">Point the camera at the participant&apos;s attendance QR.</p>
         </div>
@@ -178,14 +178,16 @@ const QrScanner = ({ onDetected, busy = false }) => {
           onClick={() => setManualOpen((o) => !o)}
           className="text-xs font-medium text-indigo-600 hover:underline"
         >
-          {manualOpen ? 'Hide manual entry' : 'Enter QR code manually'}
+          {manualOpen ? 'Hide manual entry' : 'Enter Attendance Credential Manually'}
         </button>
         {manualOpen && (
           <form onSubmit={submitManual} className="mt-2 flex flex-col gap-2 sm:flex-row">
             <input
               value={manualValue}
               onChange={(e) => setManualValue(e.target.value)}
-              placeholder="Paste the participant's QR credential"
+              placeholder="Enter the participant's 10-character credential"
+              aria-label="Manual attendance credential"
+              autoCapitalize="none"
               className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
             <button
@@ -193,7 +195,7 @@ const QrScanner = ({ onDetected, busy = false }) => {
               disabled={busy || !manualValue.trim()}
               className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Check in
+              Verify / Mark Attendance
             </button>
           </form>
         )}

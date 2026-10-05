@@ -33,6 +33,20 @@ const sign = (part) => crypto.createHmac('sha256', SIGNING_SECRET).update(part).
 /** A fresh, unpredictable per-registration nonce. */
 export const issueQrNonce = () => crypto.randomBytes(18).toString('base64url');
 
+const ATTENDANCE_CREDENTIAL_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+/**
+ * A user-facing attendance credential: exactly ten case-sensitive
+ * alphanumeric characters drawn with Node's cryptographically secure RNG.
+ */
+export const issueAttendanceCredential = () =>
+  Array.from(
+    { length: 10 },
+    () => ATTENDANCE_CREDENTIAL_ALPHABET[crypto.randomInt(ATTENDANCE_CREDENTIAL_ALPHABET.length)],
+  ).join('');
+
+export const isAttendanceCredential = (value) => /^[A-Za-z0-9]{10}$/.test(String(value ?? ''));
+
 /**
  * Build the signed attendance token for a registration.
  * @param {{ registrationId: string, eventId: string, nonce: string }} args

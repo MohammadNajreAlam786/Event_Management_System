@@ -7,8 +7,6 @@ import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import ErrorBanner from '../../components/ui/ErrorBanner.jsx';
 import Icon from '../../components/ui/Icon.jsx';
 import {
-  EVENT_STATUSES,
-  EVENT_STATUS_LABEL,
   formatDateTime,
 } from '../../utils/eventMeta.js';
 
@@ -37,7 +35,6 @@ const OrganiserEventDetails = () => {
   const [event, setEvent] = useState(null);
   const [loadState, setLoadState] = useState('loading');
   const [error, setError] = useState('');
-  const [statusValue, setStatusValue] = useState('');
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -49,7 +46,6 @@ const OrganiserEventDetails = () => {
       .getEvent(id)
       .then((data) => {
         setEvent(data);
-        setStatusValue(data.status);
         setLoadState('ready');
       })
       .catch((err) => {
@@ -64,16 +60,14 @@ const OrganiserEventDetails = () => {
 
   useEffect(load, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const applyStatus = async () => {
-    if (!statusValue || statusValue === event.status) return;
+  const applyStatus = async (status) => {
     setStatusBusy(true);
     setStatusError('');
     try {
-      const updated = await eventService.updateEventStatus(id, statusValue);
+      const updated = await eventService.updateEventStatus(id, status);
       setEvent(updated);
     } catch (err) {
       setStatusError(err.message || 'Could not update the status.');
-      setStatusValue(event.status);
     } finally {
       setStatusBusy(false);
     }
@@ -100,6 +94,8 @@ const OrganiserEventDetails = () => {
 
   const organiserName = typeof event.organiser === 'object' ? event.organiser?.name : event.organiser;
   const isCompleted = event.status === 'COMPLETED';
+  const isCancelled = event.status === 'CANCELLED';
+  const canPublish = ['DRAFT', 'PLANNED'].includes(event.status) && new Date(event.startDate) > new Date();
 
   return (
     <section className="space-y-6">
@@ -207,28 +203,29 @@ const OrganiserEventDetails = () => {
             <EventStatusBadge status={event.status} />
             <span>This event is locked and can no longer be modified.</span>
           </div>
+        ) : isCancelled ? (
+          <div className="mt-2 flex items-center gap-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            <EventStatusBadge status={event.status} />
+            <span>Cancelled events are terminal and cannot be reopened.</span>
+          </div>
         ) : (
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <select
-            value={statusValue || event.status}
-            onChange={(e) => setStatusValue(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          >
-            {EVENT_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {EVENT_STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={applyStatus}
-            disabled={statusBusy || statusValue === event.status}
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {statusBusy ? 'Updating…' : 'Update status'}
-          </button>
-        </div>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <EventStatusBadge status={event.status} />
+            {event.status === 'DRAFT' && (
+              <button type="button" onClick={() => applyStatus('PLANNED')} disabled={statusBusy} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
+                {statusBusy ? 'Updating…' : 'Mark planned'}
+              </button>
+            )}
+            {canPublish && (
+              <button type="button" onClick={() => applyStatus('UPCOMING')} disabled={statusBusy} className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+                {statusBusy ? 'Updating…' : 'Publish event'}
+              </button>
+            )}
+            <button type="button" onClick={() => applyStatus('CANCELLED')} disabled={statusBusy} className="rounded-md border border-rose-300 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">
+              {statusBusy ? 'Updating…' : 'Cancel event'}
+            </button>
+            {(event.status === 'UPCOMING' || event.status === 'ONGOING') && <span className="text-xs text-slate-500">This status advances automatically from the event dates.</span>}
+          </div>
         )}
       </div>
 

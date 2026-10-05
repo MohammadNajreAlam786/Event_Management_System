@@ -132,15 +132,23 @@ export const createTask = async (eventId, body, organiserId) => {
   if (assignment) await createTaskInvitation({ event, task, member: assignment.member, recipient: assignment.recipient, organiserId });
   return task;
 };
-export const updateTask = async (eventId, id, body) => {
-  await assertPlanningMutable(eventId);
+export const updateTask = async (eventId, id, body, organiserId) => {
+  const event = await assertPlanningMutable(eventId);
   if (body?.teamMember) {
     const current = await taskCrud.get(eventId, id);
     if (current.teamMember && String(current.teamMember) !== String(body.teamMember)) {
       throw ApiError.badRequest('Reassigning an invited task is not supported; create a new task assignment to preserve invitation history.');
     }
     if (!current.teamMember) {
-      throw ApiError.badRequest('Assign a team member when creating a task so the required invitation can be created.');
+      const assignment = await resolveTeamAssignment({ eventId, teamMemberId: body.teamMember });
+      const task = await taskCrud.update(eventId, id, {
+        ...body,
+        teamMember: assignment.member._id,
+        assignedTo: assignment.member.name,
+        status: 'ASSIGNED',
+      });
+      await createTaskInvitation({ event, task, member: assignment.member, recipient: assignment.recipient, organiserId });
+      return task;
     }
   }
   return taskCrud.update(eventId, id, body);

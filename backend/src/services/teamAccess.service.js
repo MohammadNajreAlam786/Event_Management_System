@@ -49,6 +49,8 @@ export const resolveTeamAssignment = async ({ eventId, teamMemberId }) => {
 
 /** Create the one pending invitation associated with an assigned task. */
 export const createTaskInvitation = async ({ event, task, member, recipient, organiserId }) => {
+  const existing = await EventTaskInvitation.findOne({ task: task._id }).lean();
+  if (existing) throw ApiError.conflict('This task already has a team invitation.');
   const invitation = await EventTaskInvitation.create({
     event: event._id,
     task: task._id,
@@ -58,6 +60,27 @@ export const createTaskInvitation = async ({ event, task, member, recipient, org
   });
   notifyTaskInvitation({ userId: recipient._id, eventId: event._id, eventTitle: event.title, taskTitle: task.title }).catch(() => {});
   return invitation;
+};
+
+const ATTENDANCE_TASK_PATTERN = /\b(?:qr\s*attendance|scan\s*qr|qr\s*scan|attendance\s*(?:management|scanner|scan)|manage\s*attendance)\b/i;
+
+/** Grant scanner access only to a member with an accepted, attendance-specific task. */
+export const assertTeamAttendanceAccess = async ({ event, userId }) => {
+  const access = await getTeamAccess({ event, userId });
+  if (access.status !== 'ACTIVE') {
+    throw ApiError.forbidden('Your team access is not active for this event.');
+  }
+  const invitations = await EventTaskInvitation.find({
+    event: event._id,
+    recipient: userId,
+    status: 'ACCEPTED',
+  }).populate('task', 'title description').lean();
+  const hasAttendanceTask = invitations.some((invitation) =>
+    ATTENDANCE_TASK_PATTERN.test(`${invitation.task?.title || ''} ${invitation.task?.description || ''}`),
+  );
+  if (!hasAttendanceTask) {
+    throw ApiError.forbidden('You do not have an accepted QR attendance task for this event.');
+  }
 };
 
 const findAcceptedInvitations = (eventId, userId) =>
@@ -145,6 +168,7 @@ export const listMyAssignedTasks = async (userId) => {
       // meaningful even if older request history also exists.
       accessRequestStatus: access.approvedRequestId ? 'APPROVED' : (latestRequest?.status ?? 'NONE'),
       canUpdate: access.status === 'ACTIVE',
+      canManageAttendance: access.status === 'ACTIVE' && ATTENDANCE_TASK_PATTERN.test(`${i.task.title || ''} ${i.task.description || ''}`),
     };
   }));
   return { tasks: items };

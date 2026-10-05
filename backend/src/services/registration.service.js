@@ -7,7 +7,7 @@ import Event, { EVENT_STATUSES, EVENT_CATEGORIES, EVENT_REGISTRATION_TYPES } fro
 import User, { ROLES, USER_STATUS } from '../models/user.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { loadOwnedEvent } from './event.service.js';
-import { issueQrNonce } from '../utils/qrToken.js';
+import { issueAttendanceCredential, issueQrNonce } from '../utils/qrToken.js';
 import { attendanceByRegistrationForUser } from './attendance.service.js';
 import { notifyRegistrationConfirmed } from './notification.service.js';
 import { syncEventStatuses } from './eventStatusTransition.service.js';
@@ -31,6 +31,21 @@ const REGISTRABLE_STATUSES = [EVENT_STATUSES.PLANNED, EVENT_STATUSES.UPCOMING];
 const DEFAULT_PAGE_SIZE = 12;
 const MAX_PAGE_SIZE = 60;
 const NOT_DELETED = { isDeleted: { $ne: true } };
+
+const isAttendanceCredentialCollision = (err) =>
+  err?.code === 11000 && Boolean(err.keyPattern?.attendanceCredential || err.keyValue?.attendanceCredential);
+
+const saveWithFreshAttendanceCredential = async (registration) => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    registration.attendanceCredential = issueAttendanceCredential();
+    try {
+      return await registration.save();
+    } catch (err) {
+      if (!isAttendanceCredentialCollision(err)) throw err;
+    }
+  }
+  throw new ApiError(503, 'Could not issue an attendance credential. Please try again.');
+};
 
 const escapeRegExp = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const clampPage = (v) => {
@@ -291,10 +306,12 @@ export const registerForEvent = async ({ userId, eventId }) => {
     existing.registeredAt = new Date();
     existing.cancelledAt = null;
     existing.qrNonce = issueQrNonce();
-    registration = await existing.save();
+    registration = await saveWithFreshAttendanceCredential(existing);
   } else {
     try {
-      registration = await Registration.create({ user: userId, event: eventId, qrNonce: issueQrNonce() });
+      registration = await saveWithFreshAttendanceCredential(
+        new Registration({ user: userId, event: eventId, qrNonce: issueQrNonce() }),
+      );
     } catch (err) {
       if (err && err.code === 11000) {
         throw ApiError.conflict('You are already registered for this event.');
@@ -441,15 +458,17 @@ export const registerTeamForEvent = async ({ userId, eventId, teamName, teamSize
         existing.qrNonce = issueQrNonce();
         existing.team = team._id;
         // eslint-disable-next-line no-await-in-loop
-        registration = await existing.save();
+        registration = await saveWithFreshAttendanceCredential(existing);
       } else {
         // eslint-disable-next-line no-await-in-loop
-        registration = await Registration.create({
-          user: member._id,
-          event: eventId,
-          qrNonce: issueQrNonce(),
-          team: team._id,
-        });
+        registration = await saveWithFreshAttendanceCredential(
+          new Registration({
+            user: member._id,
+            event: eventId,
+            qrNonce: issueQrNonce(),
+            team: team._id,
+          }),
+        );
       }
       createdRegistrationIds.push(registration._id);
     }

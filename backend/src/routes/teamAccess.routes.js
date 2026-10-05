@@ -13,6 +13,7 @@ router.post('/invitations/:invitationId/accept', teamAccess.acceptInvitation);
 router.post('/invitations/:invitationId/decline', teamAccess.declineInvitation);
 router.get('/tasks', teamAccess.listMyTasks);
 router.patch('/tasks/:taskId/status', teamAccess.updateMyTaskStatus);
+router.post('/events/:eventId/attendance/check-in', teamAccess.checkInAttendance);
 router.post('/events/:eventId/access-requests', teamAccess.requestAccess);
 
 export default router;

@@ -1,6 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 import * as teamAccess from '../services/teamAccess.service.js';
+import * as attendance from '../services/attendance.service.js';
 
 export const listMyInvitations = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await teamAccess.listMyInvitations(req.user.id) });
@@ -28,6 +29,25 @@ export const updateMyTaskStatus = asyncHandler(async (req, res) => {
 export const requestAccess = asyncHandler(async (req, res) => {
   const request = await teamAccess.requestPostEventAccess({ eventId: req.params.eventId, userId: req.user.id, reason: req.body?.reason });
   res.status(201).json({ success: true, data: { request }, message: 'Access request submitted.' });
+});
+
+/** QR attendance is a narrow capability granted only by an accepted attendance task. */
+export const checkInAttendance = asyncHandler(async (req, res) => {
+  try {
+    const data = await attendance.checkInByCredential({
+      organiserId: req.user.id,
+      eventId: req.params.eventId,
+      credential: req.body?.credential,
+      teamMember: true,
+    });
+    res.status(201).json({ success: true, data, message: 'Attendance marked.' });
+  } catch (err) {
+    if (err?.code === attendance.ALREADY_CHECKED_IN) {
+      res.status(409).json({ success: false, message: err.message, data: err.payload });
+      return;
+    }
+    throw err;
+  }
 });
 
 export const listAccessRequests = asyncHandler(async (req, res) => {

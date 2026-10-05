@@ -3,16 +3,17 @@ import mongoose from 'mongoose';
 import Attendance from '../models/attendance.model.js';
 import Registration from '../models/registration.model.js';
 import Team from '../models/team.model.js';
-import { EVENT_STATUSES } from '../models/event.model.js';
+import Event, { EVENT_STATUSES } from '../models/event.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { loadOwnedEvent } from './event.service.js';
 import { loadEventForAnalytics } from './analytics.service.js';
 import { notifyAttendanceRecorded } from './notification.service.js';
 import { syncEventStatuses } from './eventStatusTransition.service.js';
+import { assertTeamAttendanceAccess } from './teamAccess.service.js';
 import {
+  isAttendanceCredential,
+  issueAttendanceCredential,
   issueQrNonce,
-  signAttendanceToken,
-  buildQrPayload,
   verifyAttendanceToken,
   extractCredential,
 } from '../utils/qrToken.js';
@@ -20,8 +21,8 @@ import {
 /**
  * QR attendance domain logic (Phase 7).
  *
- * Flow: a participant's active Registration → a signed QR credential (this
- * module builds it) → an organiser scans it → verified against the same
+ * Flow: a participant's active Registration → a short random QR credential →
+ * an organiser scans it → verified against the same
  * registration → an Attendance row is created.
  *
  * Event-status rule for check-in (Phase 13): attendance is only recorded
@@ -45,6 +46,24 @@ const assertObjectId = (id, label) => {
   if (!mongoose.isValidObjectId(id)) throw ApiError.badRequest(`Invalid ${label}.`);
 };
 
+const isAttendanceCredentialCollision = (err) =>
+  err?.code === 11000 && Boolean(err.keyPattern?.attendanceCredential || err.keyValue?.attendanceCredential);
+
+const ensureAttendanceCredential = async (registration) => {
+  if (isAttendanceCredential(registration.attendanceCredential)) return registration.attendanceCredential;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    registration.attendanceCredential = issueAttendanceCredential();
+    try {
+      await registration.save();
+      return registration.attendanceCredential;
+    } catch (err) {
+      if (!isAttendanceCredentialCollision(err)) throw err;
+    }
+  }
+  throw new ApiError(503, 'Could not issue an attendance credential. Please try again.');
+};
+
 /**
  * GET /api/registrations/:registrationId/qr — the caller's own attendance QR.
  * Only the authenticated owner, only for an ACTIVE registration on a live event.
@@ -53,7 +72,7 @@ export const getMyQr = async ({ userId, registrationId }) => {
   assertObjectId(registrationId, 'registration id');
 
   const registration = await Registration.findById(registrationId)
-    .select('+qrNonce')
+    .select('+qrNonce +attendanceCredential')
     .populate('event', 'title startDate endDate venue status isDeleted');
   if (!registration) throw ApiError.notFound('Registration not found.');
 
@@ -68,17 +87,13 @@ export const getMyQr = async ({ userId, registrationId }) => {
     throw ApiError.conflict('This event is no longer available, so no attendance QR is available.');
   }
 
-  // Lazily issue a nonce for registrations created before Phase 7.
+  // Lazily migrate registrations created before short credentials were added.
+  // The nonce is retained only to validate any old signed QR token the
+  // participant may still have saved.
   if (!registration.qrNonce) {
     registration.qrNonce = issueQrNonce();
-    await registration.save();
   }
-
-  const credential = signAttendanceToken({
-    registrationId: registration._id,
-    eventId: event._id,
-    nonce: registration.qrNonce,
-  });
+  const credential = await ensureAttendanceCredential(registration);
 
   const attendance = await Attendance.findOne({ registration: registration._id }).lean();
 
@@ -97,7 +112,7 @@ export const getMyQr = async ({ userId, registrationId }) => {
     },
     qr: {
       credential,
-      payload: buildQrPayload(credential),
+      payload: credential,
     },
     attendance: attendance
       ? { status: attendance.status, checkedInAt: attendance.checkedInAt }
@@ -109,43 +124,74 @@ export const getMyQr = async ({ userId, registrationId }) => {
  * POST /api/events/:eventId/attendance/check-in — organiser verifies a scanned
  * credential and records attendance for one of THEIR events.
  *
- * Verifies, in order (§24): event ownership, event status, credential signature,
- * event match, nonce (not rotated), registration active, no existing check-in.
+ * Verifies, in order (§24): event ownership, event status, credential lookup,
+ * event match, registration active, no existing check-in.
  * Only then is an Attendance row created — atomically, so concurrent scans of
  * the same QR still yield exactly one row (§45).
  */
-export const checkInByCredential = async ({ organiserId, eventId, credential }) => {
+export const checkInByCredential = async ({ organiserId, eventId, credential, teamMember = false }) => {
   await syncEventStatuses();
-  const event = await loadOwnedEvent(eventId, organiserId); // 400 bad id / 404 missing / 403 not owner
+  let event;
+  if (teamMember) {
+    if (!mongoose.isValidObjectId(eventId)) throw ApiError.badRequest('Invalid event id.');
+    event = await Event.findOne({ _id: eventId, isDeleted: { $ne: true } });
+    if (!event) throw ApiError.notFound('Event not found.');
+    await assertTeamAttendanceAccess({ event, userId: organiserId });
+  } else {
+    event = await loadOwnedEvent(eventId, organiserId); // 400 bad id / 404 missing / 403 not owner
+  }
 
   if (!ATTENDANCE_OPEN_STATUSES.includes(event.status)) {
     throw ApiError.conflict('Attendance is available only while the event is ongoing.');
   }
 
-  let decoded;
-  try {
-    decoded = verifyAttendanceToken(extractCredential(credential));
-  } catch {
-    throw new ApiError(422, 'This QR code could not be read. Ask the participant to reopen their attendance QR.');
+  const scannedCredential = extractCredential(credential);
+  let registration;
+  if (isAttendanceCredential(scannedCredential)) {
+    registration = await Registration.findOne({ attendanceCredential: scannedCredential })
+      .select('+attendanceCredential +qrNonce')
+      .populate('user', 'name email')
+      .populate('event', 'title status');
+  } else {
+    // Migration support for QR images issued before the short credential.
+    // New QR images and manual entry always use the 10-character code above.
+    let decoded;
+    try {
+      decoded = verifyAttendanceToken(scannedCredential);
+    } catch {
+      throw new ApiError(422, 'This attendance credential could not be verified.');
+    }
+    if (String(decoded.eid) !== String(eventId)) {
+      throw new ApiError(422, 'This attendance credential is not valid for this event.');
+    }
+    registration = await Registration.findById(decoded.rid)
+      .select('+qrNonce')
+      .populate('user', 'name email')
+      .populate('event', 'title status');
+    if (registration && (!registration.qrNonce || registration.qrNonce !== decoded.nonce)) {
+      throw new ApiError(422, 'This attendance credential is no longer valid. Ask the participant to reopen their attendance QR.');
+    }
   }
 
-  if (String(decoded.eid) !== String(eventId)) {
-    throw new ApiError(422, 'This QR code is not valid for this event.');
-  }
-
-  const registration = await Registration.findById(decoded.rid)
-    .select('+qrNonce')
-    .populate('user', 'name email')
-    .populate('event', 'title status');
   if (!registration) {
-    throw new ApiError(422, 'This QR code is not valid.');
+    throw new ApiError(422, 'This attendance credential is not valid.');
   }
   if (String(registration.event?._id) !== String(eventId)) {
-    throw new ApiError(422, 'This QR code is not valid for this event.');
+    throw new ApiError(422, 'This attendance credential is not valid for this event.');
   }
-  if (!registration.qrNonce || registration.qrNonce !== decoded.nonce) {
-    throw new ApiError(422, 'This QR code is no longer valid. Ask the participant to reopen their attendance QR.');
+
+  if (isAttendanceCredential(scannedCredential) && registration.attendanceCredential !== scannedCredential) {
+    throw new ApiError(422, 'This attendance credential is not valid.');
   }
+
+  const isShortCredential = isAttendanceCredential(scannedCredential);
+  if (!isShortCredential && !registration.qrNonce) {
+    throw new ApiError(422, 'This attendance credential is no longer valid.');
+  }
+
+  // From here camera and manual input follow the same registration, event,
+  // status, and duplicate-attendance path. Existing signed QR images remain
+  // valid only until cancellation or re-registration rotates their nonce.
   if (registration.status !== 'REGISTERED') {
     throw ApiError.conflict('This registration is no longer active.');
   }

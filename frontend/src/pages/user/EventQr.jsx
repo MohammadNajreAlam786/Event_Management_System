@@ -25,6 +25,7 @@ const EventQr = () => {
   const [data, setData] = useState(null);
   const [loadState, setLoadState] = useState('loading');
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -73,6 +74,16 @@ const EventQr = () => {
   const { event, qr, attendance } = data;
   const present = attendance?.status === 'PRESENT';
 
+  const copyCredential = async () => {
+    try {
+      await navigator.clipboard.writeText(qr.credential);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError('Unable to copy the attendance credential. Select and copy it manually.');
+    }
+  };
+
   return (
     <section className="mx-auto max-w-md space-y-5">
       <Link to="/user/my-events" className="text-xs font-medium text-indigo-600 hover:underline">
@@ -86,7 +97,7 @@ const EventQr = () => {
         </div>
 
         <div className="mt-4 flex justify-center">
-          <QrImage value={qr.payload} size={240} />
+          <QrImage value={qr.credential} size={240} />
         </div>
 
         {present ? (
@@ -106,6 +117,28 @@ const EventQr = () => {
             Show this code to the organiser at the event to be checked in.
           </p>
         )}
+
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <p className="text-sm font-medium text-slate-800">Attendance Credential</p>
+          <div className="mt-2 flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={qr.credential}
+              aria-label="Attendance credential"
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-w-0 flex-1 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-lg font-semibold tracking-[0.12em] text-slate-800 outline-none"
+            />
+            <button
+              type="button"
+              onClick={copyCredential}
+              className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Use this credential for manual attendance verification if QR scanning is unavailable.</p>
+        </div>
 
         <dl className="mt-5 space-y-2 border-t border-slate-100 pt-4">
           <Row label="When">{formatDateTime(event.startDate)}</Row>

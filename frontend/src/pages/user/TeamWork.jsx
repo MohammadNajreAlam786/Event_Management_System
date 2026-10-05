@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 
 import teamWorkService from '../../services/teamWorkService.js';
 import PageHeader from '../../components/ui/PageHeader.jsx';
@@ -89,7 +89,7 @@ const TeamWork = () => {
       {error && <ErrorBanner message={error} onRetry={state === 'error' ? load : undefined} />}
 
       <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
-        Team access is limited to your assigned tasks. It does not provide organiser access to event planning, attendance, certificates, or event settings.
+        Team access is limited to your assigned tasks. An accepted attendance task may allow attendance check-in for that event only; it never provides organiser access to planning, certificates, or event settings.
       </div>
 
       <div className="space-y-3">
@@ -156,6 +156,13 @@ const TeamWork = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 {item.task.status !== 'IN_PROGRESS' && item.task.status !== 'COMPLETED' && <Button size="sm" variant="secondary" disabled={Boolean(busy)} onClick={() => updateTask(item, 'IN_PROGRESS')}>Mark in progress</Button>}
                 {item.task.status !== 'COMPLETED' && <Button size="sm" disabled={Boolean(busy)} onClick={() => updateTask(item, 'COMPLETED')}>Mark completed</Button>}
+              </div>
+            )}
+            {item.canManageAttendance && (
+              <div className="mt-4">
+                <Link to={`/user/team-work/attendance/${item.event.id}`} className="inline-flex rounded-md border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+                  Open QR attendance scanner
+                </Link>
               </div>
             )}
           </article>
