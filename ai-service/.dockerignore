@@ -1,0 +1,17 @@
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.env
+.env.*
+.git
+.gitignore
+.vscode
+.idea
+*.log

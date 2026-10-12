@@ -45,12 +45,12 @@ export const verifyAuthToken = (token) => jwt.verify(token, env.jwt.secret);
 
 /**
  * Cookie options for setting the auth cookie.
- * `secure` is enabled only in production (dev runs over plain HTTP).
+ * `secure` is enabled in production unless overridden by COOKIE_SECURE (e.g. plain HTTP lab).
  */
 export const authCookieOptions = () => ({
   httpOnly: true,
   sameSite: 'lax',
-  secure: isProduction,
+  secure: env.cookieSecure ?? isProduction,
   path: '/',
   maxAge: durationToMs(env.jwt.expiresIn),
 });
@@ -62,6 +62,6 @@ export const authCookieOptions = () => ({
 export const clearAuthCookieOptions = () => ({
   httpOnly: true,
   sameSite: 'lax',
-  secure: isProduction,
+  secure: env.cookieSecure ?? isProduction,
   path: '/',
 });

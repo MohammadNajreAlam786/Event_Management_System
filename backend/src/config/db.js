@@ -11,7 +11,7 @@ import { logger } from '../utils/logger.js';
  * @param {string} uri - MongoDB connection string.
  * @returns {Promise<import('mongoose').Connection>}
  */
-export const connectDatabase = async (uri) => {
+export const connectDatabase = async (uri, retries = 5, delayMs = 3000) => {
   if (!uri) {
     throw new Error('MONGODB_URI is not set. Add it to backend/.env (see backend/.env.example).');
   }
@@ -19,14 +19,24 @@ export const connectDatabase = async (uri) => {
   mongoose.connection.on('error', (err) => logger.error('MongoDB connection error:', err.message));
   mongoose.connection.on('disconnected', () => logger.warn('MongoDB connection lost'));
 
-  // Fail fast instead of buffering queries indefinitely when the server is down.
-  await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      // Fail fast per attempt instead of buffering queries indefinitely when the server is down.
+      await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
 
-  logger.info(
-    `MongoDB connected: database "${mongoose.connection.name}" on ${mongoose.connection.host}:${mongoose.connection.port}`,
-  );
+      logger.info(
+        `MongoDB connected: database "${mongoose.connection.name}" on ${mongoose.connection.host}:${mongoose.connection.port}`,
+      );
 
-  return mongoose.connection;
+      return mongoose.connection;
+    } catch (error) {
+      logger.warn(`MongoDB connection attempt ${attempt}/${retries} failed: ${error.message}`);
+      if (attempt === retries) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
 };
 
 /**

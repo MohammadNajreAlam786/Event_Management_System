@@ -48,6 +48,7 @@ app.add_middleware(
         "http://localhost:5000",
         "http://127.0.0.1:5000",
         "http://localhost:5173",
+        "http://backend:5000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -74,7 +75,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "main:app",
-        host=os.getenv("AI_SERVICE_HOST", "127.0.0.1"),
+        host=os.getenv("AI_SERVICE_HOST", "0.0.0.0"),
         port=int(os.getenv("AI_SERVICE_PORT", "8000")),
-        reload=True,
+        reload=os.getenv("AI_RELOAD", "false").lower() == "true",
     )
