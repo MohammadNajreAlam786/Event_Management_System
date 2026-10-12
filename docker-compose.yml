@@ -1,15 +1,11 @@
 services:
-  # ---------------------------------------------------------------------------
   # 1. MongoDB Database Service
-  # ---------------------------------------------------------------------------
   mongodb:
     image: mongo:7.0
     container_name: eventflow-mongodb
     restart: unless-stopped
     environment:
-      - MONGO_INITDB_DATABASE=event_management_system
-    ports:
-      - "27017:27017"
+      MONGO_INITDB_DATABASE: event_management_system
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -21,9 +17,7 @@ services:
       retries: 5
       start_period: 10s
 
-  # ---------------------------------------------------------------------------
-  # 2. AI Planning & Sentiment Service (FastAPI / Python)
-  # ---------------------------------------------------------------------------
+  # 2. AI Planning and Sentiment Service
   ai-service:
     build:
       context: ./ai-service
@@ -31,20 +25,22 @@ services:
     container_name: eventflow-ai-service
     restart: unless-stopped
     environment:
-      - AI_SERVICE_HOST=0.0.0.0
-      - AI_SERVICE_PORT=8000
+      AI_SERVICE_HOST: 0.0.0.0
+      AI_SERVICE_PORT: "8000"
     networks:
       - eventflow-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').getcode() == 200 else 1)"]
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).getcode() == 200 else 1)"
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
-  # ---------------------------------------------------------------------------
-  # 3. Backend API Service (Node.js / Express)
-  # ---------------------------------------------------------------------------
+  # 3. Backend API Service
   backend:
     build:
       context: ./backend
@@ -57,39 +53,41 @@ services:
       ai-service:
         condition: service_healthy
     environment:
-      - NODE_ENV=production
-      - PORT=5000
-      - MONGODB_URI=mongodb://mongodb:27017/event_management_system
-      - CLIENT_URL=${CLIENT_URL:-http://localhost:5173}
-      - JWT_SECRET=${JWT_SECRET:-lab_eventflow_jwt_secret_key_2026_very_secure_and_long}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
-      - AUTH_COOKIE_NAME=${AUTH_COOKIE_NAME:-em_token}
-      - COOKIE_SECURE=${COOKIE_SECURE:-false}
-      - AI_SERVICE_URL=http://ai-service:8000
-      - AI_TIMEOUT_MS=20000
-      - ADMIN_NAME=${ADMIN_NAME:-System Administrator}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@gmail.com}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin@123}
+      NODE_ENV: production
+      PORT: "5000"
+      MONGODB_URI: mongodb://mongodb:27017/event_management_system
+      CLIENT_URL: ${CLIENT_URL:?Set CLIENT_URL in the root .env file}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:?Set JWT_EXPIRES_IN in the root .env file}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:?Set AUTH_COOKIE_NAME in the root .env file}
+      COOKIE_SECURE: ${COOKIE_SECURE:?Set COOKIE_SECURE in the root .env file}
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_TIMEOUT_MS: "20000"
+      ADMIN_NAME: ${ADMIN_NAME:?Set ADMIN_NAME in the root .env file}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in the root .env file}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in the root .env file}
     ports:
       - "5000:5000"
     networks:
       - eventflow-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:5000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
 
-  # ---------------------------------------------------------------------------
-  # 4. Frontend Web Service (React / Vite production build on Nginx)
-  # ---------------------------------------------------------------------------
+  # 4. Frontend Production Service (Nginx)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/api}
+        VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL in the root .env file}
     container_name: eventflow-frontend
     restart: unless-stopped
     depends_on:
@@ -100,23 +98,23 @@ services:
     networks:
       - eventflow-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      test:
+        - CMD
+        - wget
+        - --no-verbose
+        - --tries=1
+        - --spider
+        - http://localhost:80/health
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s
 
-# -----------------------------------------------------------------------------
-# Networks
-# -----------------------------------------------------------------------------
 networks:
   eventflow-network:
     name: eventflow-network
     driver: bridge
 
-# -----------------------------------------------------------------------------
-# Persistent Volumes
-# -----------------------------------------------------------------------------
 volumes:
   mongodb_data:
     name: eventflow_mongodb_data
