@@ -24,8 +24,8 @@ const start = async () => {
     // this line is ever reached twice in the same process.
     startEventStatusScheduler();
 
-    const server = app.listen(env.port, '0.0.0.0', () => {
-      logger.info(`Backend API listening on http://0.0.0.0:${env.port} (mapped to port ${env.port})`);
+    const server = app.listen(env.port, () => {
+      logger.info(`Backend API listening on http://localhost:${env.port}`);
       logger.info(`Health check:  http://localhost:${env.port}/api/health`);
       logger.info(`Auth API:      http://localhost:${env.port}/api/auth`);
       logger.info(`Environment:   ${env.nodeEnv}`);
