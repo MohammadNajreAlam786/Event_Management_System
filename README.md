@@ -88,17 +88,77 @@ The system helps organizers manage events from pre-event planning to post-event 
 
 ```text
 event-management-system/
-├── frontend/
-├── backend/
-├── ai-service/
+├── frontend/             # React + Vite client (Nginx in Docker)
+├── backend/              # Node.js + Express API server
+├── ai-service/           # FastAPI Python sentiment & planning analysis
+├── docker-compose.yml    # Production multi-service orchestration
+├── docker-compose.dev.yml# Containerized development with hot-reload
+├── .env.example          # Docker environment configuration template
 └── README.md
 ```
 
-## Installation and Setup
+## Quick Start with Docker (Recommended)
+
+The entire system (MongoDB, AI Service, Express Backend, and React Frontend via Nginx) can be launched with a single command.
+
+### 1. Configure Environment (Optional)
+
+```bash
+# Copy template to .env (defaults are pre-configured and ready to run)
+cp .env.example .env
+```
+
+### 2. Build and Run
+
+```bash
+# Production stack (Nginx, Express, FastAPI, MongoDB)
+docker compose up -d --build
+```
+
+### 3. Access Services
+
+- **Frontend Application**: <http://localhost> (or <http://localhost:80>)
+- **Backend API**: <http://localhost:5000/api>
+- **Backend Health Check**: <http://localhost:5000/api/health>
+- **AI Service Health Check**: <http://localhost:8000/health>
+- **MongoDB**: `localhost:27017`
+
+> Default test accounts are automatically seeded on first startup when `AUTO_SEED=true`.
+
+### 4. Useful Docker Commands
+
+```bash
+# View live logs
+docker compose logs -f
+
+# Check container health status
+docker compose ps
+
+# Re-run database seed manually inside container
+docker compose exec backend npm run seed:dev
+
+# Stop all services
+docker compose down
+
+# Stop and wipe database volume for a clean state
+docker compose down -v
+```
+
+### 5. Containerized Development with Hot Reloading
+
+For local development inside containers with live code reload:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+---
+
+## Manual Installation and Setup (Without Docker)
 
 ### 1. Start MongoDB
 
-Make sure MongoDB is running.
+Make sure MongoDB is running locally.
 
 Database name:
 

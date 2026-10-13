@@ -21,6 +21,12 @@ export const env = {
   // Name of the HTTP-only cookie that carries the JWT.
   authCookieName: process.env.AUTH_COOKIE_NAME || 'em_token',
 
+  // Cookie security setting. When COOKIE_SECURE is explicitly set, use it.
+  // Otherwise, default to false so cookies are accepted in plain HTTP / local Docker setups.
+  cookieSecure: process.env.COOKIE_SECURE !== undefined
+    ? process.env.COOKIE_SECURE === 'true'
+    : false,
+
   // QR attendance credential signing (Phase 7). If unset, a stable key is
   // derived from JWT_SECRET at runtime so the feature works out of the box;
   // set QR_TOKEN_SECRET to rotate/separate it. Never logged, never sent to a

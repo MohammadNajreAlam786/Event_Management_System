@@ -19,9 +19,12 @@ const app = express();
 // Security headers.
 app.use(helmet());
 
-// Cross-origin access for the Vite frontend. `credentials` is required so the
-// browser sends/stores the HTTP-only auth cookie; the origin is pinned (no wildcard).
-app.use(cors({ origin: env.clientUrl, credentials: true }));
+// Cross-origin access for the Vite frontend. Supports comma-separated origins.
+// `credentials` is required so the browser sends/stores the HTTP-only auth cookie.
+const allowedOrigins = env.clientUrl.includes(',')
+  ? env.clientUrl.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : env.clientUrl;
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 // Body + cookie parsing.
 app.use(express.json());
