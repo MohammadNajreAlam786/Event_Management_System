@@ -176,7 +176,7 @@ const DashboardHeader = ({ title, onMenuClick, notifyHref, notifyCount }) => {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-1.5 text-sm font-medium text-white shadow-xs transition-colors hover:bg-red-700 active:bg-red-800"
         >
           <Icon name="log-out" className="h-4 w-4" />
           Logout

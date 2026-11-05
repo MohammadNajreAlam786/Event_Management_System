@@ -157,7 +157,29 @@ const OrganiserEvents = () => {
             {loadState === 'ready' &&
               events.map((ev) => (
                 <tr key={ev.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-800">{ev.title}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {ev.image ? (
+                        <img
+                          src={ev.image}
+                          alt={ev.title}
+                          className="h-9 w-16 shrink-0 rounded-md border border-slate-200 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-9 w-16 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-slate-400">
+                          <Icon name="calendar" className="h-4 w-4" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <Link
+                          to={`/organiser/events/${ev.id}`}
+                          className="block truncate font-semibold text-slate-800 hover:text-indigo-600"
+                        >
+                          {ev.title}
+                        </Link>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{ev.category}</td>
                   <td className="px-4 py-3 text-slate-600">{ev.venue}</td>
                   <td className="px-4 py-3 text-slate-500">{formatDate(ev.startDate)}</td>

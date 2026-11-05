@@ -31,13 +31,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes.analyze import router as analyze_router
+from routes.generate import router as generate_router
 from routes.health import router as health_router
 from routes.improve import router as improve_router
 from routes.sentiment import router as sentiment_router
 
 app = FastAPI(
     title="AI-Powered Event Planning & Management System -- AI Service",
-    version="0.11.0",
+    version="0.15.0",
     description="Planning decision-support, feedback sentiment analysis, and data-grounded future-event improvement recommendations. Consumed by the Node/Express backend.",
 )
 
@@ -58,6 +59,8 @@ app.include_router(health_router)
 app.include_router(analyze_router)
 app.include_router(sentiment_router)
 app.include_router(improve_router)
+app.include_router(generate_router)
+
 
 
 @app.get("/")

@@ -181,7 +181,7 @@ Backend URL: <http://localhost:5000>
 ```bash
 cd ai-service
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000
 ```
 
 AI service URL: <http://127.0.0.1:8000>
@@ -198,11 +198,11 @@ Frontend URL: <http://localhost:5173>
 
 ## Default Test Accounts
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | admin@gmail.com | admin@123 |
+| Role      | Email               | Password      |
+| --------- | ------------------- | ------------- |
+| Admin     | admin@gmail.com     | admin@123     |
 | Organiser | organiser@gmail.com | organiser@123 |
-| User | user@gmail.com | user@123 |
+| User      | user@gmail.com      | user@123      |
 
 > Change the default passwords before using the application in a real deployment.
 

@@ -55,8 +55,3 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
-
-# ---------------------------------------------------------------------------
-# Keep academic/project documents local only
-# ---------------------------------------------------------------------------
-project-documents/

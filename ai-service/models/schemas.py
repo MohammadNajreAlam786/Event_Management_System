@@ -251,3 +251,69 @@ class ImprovementResponse(BaseModel):
     strengths: List[ImprovementNote] = Field(default_factory=list)
     improvementAreas: List[ImprovementNote] = Field(default_factory=list)
     limitations: List[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------- AI event generation models
+
+
+class GenerateEventRequest(BaseModel):
+    title: str
+    startDate: str
+    venue: str
+    mode: Optional[str] = "full"  # "full" | "description" | "banner"
+    category: Optional[str] = None
+    existingDescription: Optional[str] = None
+    existingBanner: Optional[str] = None
+
+
+class BannerOption(BaseModel):
+    url: str
+    alt: str
+    topic: str
+    source: str = "Unsplash Curated Topic Visual"
+
+
+class BannerMeta(BaseModel):
+    url: str
+    alt: str
+    topic: str
+    source: str = "Unsplash Curated Topic Visual"
+    isAiGenerated: bool = False
+    note: str = (
+        "Topic-specific verified landscape photography (16:9). "
+        "No external paid image AI key configured."
+    )
+    alternatives: List[BannerOption] = Field(default_factory=list)
+
+
+class AgendaItem(BaseModel):
+    time: str
+    title: str
+    description: str
+
+
+class GenerateEventResponse(BaseModel):
+    title: str
+    venue: str
+    startDate: str
+    endDate: str
+    category: str
+    tagline: str
+    description: str
+    objectives: List[str]
+    highlights: List[str]
+    intendedAudience: str
+    agenda: List[AgendaItem]
+    durationHours: float
+    requirements: List[str]
+    suggestedCapacity: int
+    registrationType: str
+    maxTeamSize: Optional[int] = None
+    registrationStartDate: Optional[str] = None
+    registrationEndDate: Optional[str] = None
+    keywords: List[str]
+    banner: BannerMeta
+    method: str = "rule-based-topic-synthesizer"
+    engine: str = "eventflow-domain-ai-generator"
+    generatedAt: str
+

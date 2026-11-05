@@ -18,9 +18,10 @@ export const participantService = {
    * whether or not the visitor is signed in — no `myRegistration` on the
    * returned events, since the caller's identity isn't known/relevant here.
    */
-  async getFeaturedEvents(limit = 6) {
-    const { data } = await api.get('/events/public/featured', { params: { limit } });
-    return data.data.events;
+  async getFeaturedEvents(params = {}) {
+    const query = typeof params === 'number' ? { limit: params } : params;
+    const { data } = await api.get('/events/public/featured', { params: query });
+    return data?.data?.events ?? [];
   },
 
   async getEvent(id) {

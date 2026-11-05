@@ -263,10 +263,18 @@ const EventForm = ({ initialValues = null, onSubmit, submitLabel = 'Save', onCan
 
         <div className="space-y-1">
           <label htmlFor="image" className="text-sm font-medium text-slate-700">
-            Image URL
+            Image URL (16:9 Banner)
           </label>
           <input id="image" type="url" value={form.image} onChange={update('image')} className={inputClass('image')} />
           <FieldError field="image" />
+          {form.image && form.image.trim() && (
+            <div className="mt-2 relative aspect-[16/9] max-h-44 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
+              <img src={form.image.trim()} alt="Banner preview" className="h-full w-full object-cover" />
+              <span className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                Banner Preview (16:9)
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="space-y-1 sm:col-span-2">

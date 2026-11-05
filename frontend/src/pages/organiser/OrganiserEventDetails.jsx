@@ -132,6 +132,26 @@ const OrganiserEventDetails = () => {
 
       {statusError && <ErrorBanner message={statusError} />}
 
+      {event.image && (
+        <div className="relative aspect-[16/9] max-h-[380px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm">
+          <img src={event.image} alt={event.title} className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+          <div className="absolute bottom-3 left-4 flex items-center gap-2">
+            <span className="rounded-md bg-black/60 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+              Event Banner (16:9)
+            </span>
+            <a
+              href={event.image}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md bg-white/20 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md hover:bg-white/30"
+            >
+              Open original ↗
+            </a>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {ACTIONS.map((a) => (
           <Link

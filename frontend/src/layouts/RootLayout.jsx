@@ -93,7 +93,7 @@ const RootLayout = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                  className="rounded-lg bg-red-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-red-700 active:bg-red-800"
                 >
                   Logout
                 </button>

@@ -8,6 +8,7 @@ import EventStatusBadge from '../../components/EventStatusBadge.jsx';
 import RegistrationStatusBadge from '../../components/event/RegistrationStatusBadge.jsx';
 import AttendanceStatusBadge from '../../components/attendance/AttendanceStatusBadge.jsx';
 import ErrorBanner from '../../components/ui/ErrorBanner.jsx';
+import Icon from '../../components/ui/Icon.jsx';
 import { formatDate, formatDateTime } from '../../utils/eventMeta.js';
 
 const CANCELLABLE_EVENT = (s) => s !== 'COMPLETED' && s !== 'CANCELLED';
@@ -108,19 +109,31 @@ const MyEvents = () => {
                 key={r.id}
                 className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-slate-900">{r.event.title}</span>
-                    <EventStatusBadge status={r.event.status} />
-                    <RegistrationStatusBadge status={r.status} />
-                    {r.attendance?.status === 'PRESENT' && <AttendanceStatusBadge status="PRESENT" />}
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                      {r.team ? 'Team Event' : 'Individual Event'}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {formatDateTime(r.event.startDate)} · {r.event.venue}
-                  </p>
+                <div className="flex min-w-0 items-start gap-4">
+                  {r.event.image ? (
+                    <img
+                      src={r.event.image}
+                      alt={r.event.title}
+                      className="hidden h-14 w-24 shrink-0 rounded-lg border border-slate-200 object-cover sm:block"
+                    />
+                  ) : (
+                    <div className="hidden h-14 w-24 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-slate-400 sm:flex">
+                      <Icon name="calendar" className="h-5 w-5" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-slate-900">{r.event.title}</span>
+                      <EventStatusBadge status={r.event.status} />
+                      <RegistrationStatusBadge status={r.status} />
+                      {r.attendance?.status === 'PRESENT' && <AttendanceStatusBadge status="PRESENT" />}
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                        {r.team ? 'Team Event' : 'Individual Event'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {formatDateTime(r.event.startDate)} · {r.event.venue}
+                    </p>
                   {r.team && (
                     <p className="mt-1 text-xs text-slate-500">
                       Team <span className="font-medium text-slate-700">{r.team.name}</span> ({r.team.teamId}) ·{' '}
@@ -136,6 +149,7 @@ const MyEvents = () => {
                         : `Registered ${formatDate(r.registeredAt)}`}
                   </p>
                 </div>
+              </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
                   {r.status === 'REGISTERED' && !r.event.isDeleted && (
                     <Link

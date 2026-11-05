@@ -31,15 +31,41 @@ export const EVENT_CATEGORY_LABEL = Object.fromEntries(
 
 /** Decorative header gradients keyed by event category — no image dependency. */
 export const CATEGORY_GRADIENT = {
-  WORKSHOP: 'from-indigo-500 to-blue-500',
-  SEMINAR: 'from-violet-500 to-purple-600',
-  CONFERENCE: 'from-sky-500 to-cyan-500',
-  HACKATHON: 'from-sky-500 to-cyan-500',
-  CULTURAL: 'from-rose-500 to-orange-500',
-  SPORTS: 'from-rose-500 to-orange-500',
-  TECHNICAL: 'from-indigo-500 to-blue-500',
-  ACADEMIC: 'from-violet-500 to-purple-600',
-  OTHER: 'from-emerald-500 to-teal-500',
+  WORKSHOP: 'from-indigo-600 via-indigo-700 to-blue-800',
+  SEMINAR: 'from-violet-600 via-purple-700 to-indigo-800',
+  CONFERENCE: 'from-sky-600 via-blue-700 to-indigo-900',
+  HACKATHON: 'from-teal-600 via-emerald-700 to-cyan-900',
+  CULTURAL: 'from-rose-600 via-pink-700 to-amber-700',
+  SPORTS: 'from-amber-600 via-orange-600 to-rose-700',
+  TECHNICAL: 'from-cyan-600 via-blue-600 to-indigo-800',
+  ACADEMIC: 'from-slate-700 via-indigo-800 to-slate-900',
+  OTHER: 'from-indigo-700 via-purple-700 to-pink-800',
+};
+
+/** Category icons matching Icon.jsx supported icon names. */
+export const CATEGORY_ICON = {
+  WORKSHOP: 'sparkles',
+  SEMINAR: 'message-square',
+  CONFERENCE: 'building',
+  HACKATHON: 'layers',
+  CULTURAL: 'star',
+  SPORTS: 'trending-up',
+  TECHNICAL: 'dashboard',
+  ACADEMIC: 'file-text',
+  OTHER: 'calendar-check',
+};
+
+/** Category accent colors for badges and tags. */
+export const CATEGORY_ACCENT = {
+  WORKSHOP: { text: 'text-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  SEMINAR: { text: 'text-violet-700', bg: 'bg-violet-50', border: 'border-violet-200' },
+  CONFERENCE: { text: 'text-sky-700', bg: 'bg-sky-50', border: 'border-sky-200' },
+  HACKATHON: { text: 'text-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
+  CULTURAL: { text: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200' },
+  SPORTS: { text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
+  TECHNICAL: { text: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
+  ACADEMIC: { text: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-200' },
+  OTHER: { text: 'text-slate-700', bg: 'bg-slate-100', border: 'border-slate-200' },
 };
 
 /** Format an ISO date for display. */

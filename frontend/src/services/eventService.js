@@ -6,6 +6,11 @@ import api from './api.js';
  * organiser id.
  */
 export const eventService = {
+  async generateEventDraft(payload) {
+    const { data } = await api.post('/events/ai/generate', payload);
+    return data.data.draft;
+  },
+
   async createEvent(payload) {
     const { data } = await api.post('/events', payload);
     return data.data.event;
