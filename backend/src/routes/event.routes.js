@@ -37,6 +37,7 @@ router.get('/public/featured', registrationController.listFeaturedEvents);
 router.use(authenticate);
 
 // Specific paths before the ':id' param routes.
+router.post('/ai/generate', requireRole(ROLES.ORGANISER), eventController.generateEventDraft);
 router.post('/', requireRole(ROLES.ORGANISER), eventController.createEvent);
 router.get('/my', requireRole(ROLES.ORGANISER), eventController.getMyEvents);
 router.get('/my/stats', requireRole(ROLES.ORGANISER), eventController.getMyEventStats);

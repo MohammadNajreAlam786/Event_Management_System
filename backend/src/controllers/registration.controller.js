@@ -5,7 +5,11 @@ import * as registrationService from '../services/registration.service.js';
 
 /** GET /api/events/public/featured — small anonymous-safe preview for the Home page. */
 export const listFeaturedEvents = asyncHandler(async (req, res) => {
-  const data = await registrationService.listFeaturedEvents({ limit: req.query.limit });
+  const data = await registrationService.listFeaturedEvents({
+    limit: req.query.limit,
+    search: req.query.search,
+    category: req.query.category,
+  });
   res.status(200).json({ success: true, data });
 });
 

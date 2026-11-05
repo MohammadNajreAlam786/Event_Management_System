@@ -221,11 +221,24 @@ export const listPublicEvents = async ({ userId, search, category, upcoming, pag
  * the exact same discovery filter and participant-safe shape as
  * `listPublicEvents` — no parallel event-listing logic.
  */
-export const listFeaturedEvents = async ({ limit = 6 } = {}) => {
+export const listFeaturedEvents = async ({ limit = 6, search, category } = {}) => {
   await syncEventStatuses();
   const limitNum = clampLimit(limit);
 
-  const docs = await Event.find({ ...NOT_DELETED, status: { $in: DISCOVERY_STATUSES } })
+  const filter = { ...NOT_DELETED, status: { $in: DISCOVERY_STATUSES } };
+
+  if (search && String(search).trim()) {
+    const pattern = new RegExp(escapeRegExp(String(search).trim()), 'i');
+    filter.$or = [{ title: pattern }, { venue: pattern }];
+  }
+  if (category) {
+    const cat = String(category).trim().toUpperCase();
+    if (Object.values(EVENT_CATEGORIES).includes(cat)) {
+      filter.category = cat;
+    }
+  }
+
+  const docs = await Event.find(filter)
     .sort({ startDate: 1, createdAt: -1 })
     .limit(limitNum)
     .populate('organiser', 'name')
@@ -569,7 +582,7 @@ export const listMyRegistrations = async ({ userId, status }) => {
 
   const docs = await Registration.find(filter)
     .sort({ registeredAt: -1, createdAt: -1 })
-    .populate('event', 'title category startDate endDate venue status isDeleted')
+    .populate('event', 'title category startDate endDate venue status isDeleted image')
     .lean();
 
   const usable = docs.filter((r) => r.event); // guard against a hard-deleted event ref (shouldn't happen — events are soft-deleted)

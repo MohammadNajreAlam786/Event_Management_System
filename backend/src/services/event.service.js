@@ -18,6 +18,7 @@ import {
   notifyFeedbackAvailable,
 } from './notification.service.js';
 import { syncEventStatuses } from './eventStatusTransition.service.js';
+import { generateAndSaveBanner } from './bannerGenerator.service.js';
 
 const CANCELLED = EVENT_STATUSES.CANCELLED;
 const COMPLETED = EVENT_STATUSES.COMPLETED;
@@ -81,6 +82,21 @@ const normaliseTeamFields = (data) => {
  */
 export const createEvent = async ({ organiserId, body }) => {
   const data = pickEditableEventFields(body);
+
+  // Auto-generate Format 2 vector poster banner if missing or generic unsplash image
+  if (!data.image || !data.image.startsWith('http') || data.image.includes('unsplash.com')) {
+    try {
+      data.image = generateAndSaveBanner({
+        title: data.title,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        venue: data.venue,
+        category: data.category,
+      });
+    } catch {
+      // Keep existing
+    }
+  }
 
   const { valid, errors } = validateEventData(data);
   if (!valid) throw throwValidation(errors);
@@ -235,7 +251,7 @@ export const updateEvent = async ({ eventId, organiserId, body }) => {
   const newEnd = event.endDate ? new Date(event.endDate).getTime() : null;
   if (newStart !== before.startDate || newEnd !== before.endDate) changed.push(`new date ${shortDate(event.startDate)}`);
   if (changed.length && (event.status === EVENT_STATUSES.PLANNED || event.status === EVENT_STATUSES.UPCOMING || event.status === EVENT_STATUSES.ONGOING)) {
-    notifyEventUpdated({ eventId: event._id, eventTitle: event.title, summary: changed.join('; ') }).catch(() => {});
+    notifyEventUpdated({ eventId: event._id, eventTitle: event.title, summary: changed.join('; ') }).catch(() => { });
   }
 
   return event.toPublicObject();
@@ -291,11 +307,11 @@ export const updateEventStatusByOwner = async ({ eventId, organiserId, status })
   await event.populate('organiser', ORGANISER_FIELDS);
 
   if (event.status === CANCELLED && previousStatus !== CANCELLED) {
-    notifyEventCancelled({ eventId: event._id, eventTitle: event.title }).catch(() => {});
+    notifyEventCancelled({ eventId: event._id, eventTitle: event.title }).catch(() => { });
   }
   // Phase 9 — a completed event opens feedback for participants who attended.
   if (event.status === COMPLETED && previousStatus !== COMPLETED) {
-    notifyFeedbackAvailable({ eventId: event._id, eventTitle: event.title }).catch(() => {});
+    notifyFeedbackAvailable({ eventId: event._id, eventTitle: event.title }).catch(() => { });
   }
   return event.toPublicObject();
 };
@@ -390,10 +406,10 @@ export const updateEventStatusByAdmin = async ({ eventId, status }) => {
   await event.populate('organiser', ORGANISER_FIELDS);
 
   if (event.status === CANCELLED && previousStatus !== CANCELLED) {
-    notifyEventCancelled({ eventId: event._id, eventTitle: event.title }).catch(() => {});
+    notifyEventCancelled({ eventId: event._id, eventTitle: event.title }).catch(() => { });
   }
   if (event.status === COMPLETED && previousStatus !== COMPLETED) {
-    notifyFeedbackAvailable({ eventId: event._id, eventTitle: event.title }).catch(() => {});
+    notifyFeedbackAvailable({ eventId: event._id, eventTitle: event.title }).catch(() => { });
   }
   return event.toPublicObject();
 };

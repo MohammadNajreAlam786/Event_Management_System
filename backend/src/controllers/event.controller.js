@@ -2,6 +2,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 import { isValidEventStatus } from '../utils/eventValidators.js';
 import * as eventService from '../services/event.service.js';
+import { generateEventDraft as aiGenerateDraft } from '../services/aiEventGenerator.service.js';
 
 /** Normalise an optional `status` query/body value, or throw 400. */
 const normaliseStatus = (raw) => {
@@ -9,6 +10,15 @@ const normaliseStatus = (raw) => {
   if (!isValidEventStatus(raw)) throw ApiError.badRequest(`"${raw}" is not a valid event status.`);
   return String(raw).toUpperCase();
 };
+
+/**
+ * POST /api/events/ai/generate  (ORGANISER only)
+ * Synthesizes a complete topic-specific event draft from essential inputs.
+ */
+export const generateEventDraft = asyncHandler(async (req, res) => {
+  const draft = await aiGenerateDraft(req.body ?? {});
+  res.status(200).json({ success: true, data: { draft }, message: 'Event draft generated successfully.' });
+});
 
 /**
  * POST /api/events  (ORGANISER only)
